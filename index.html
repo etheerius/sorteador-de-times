@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sorteador de Times</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body {
+      padding: 20px;
+      background-color: #f8f9fa;
+    }
+    .card {
+      border-radius: 15px;
+    }
+    .card-header {
+      border-top-left-radius: 15px;
+      border-top-right-radius: 15px;
+    }
+    textarea {
+      resize: vertical;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-primary text-white text-center">
+        <h4 class="mb-0">⚽ Sorteador de Times</h4>
+      </div>
+      <div class="card-body">
+        <label for="jogadoresInput" class="form-label">Digite os nomes dos jogadores (um por linha):</label>
+        <textarea id="jogadoresInput" class="form-control mb-3" rows="8" placeholder="Ex: João&#10;Pedro&#10;Gabriel&#10;Washington..."></textarea>
+        <button onclick="sortearTimes()" class="btn btn-success w-100">🎲 Sortear Times</button>
+      </div>
+    </div>
+    <div id="resultado" class="row g-4"></div>
+  </div>
+
+  <script>
+    const goleirosFixos = ["gabriel", "washington"];
+    const jogadoresPorTime = 5;
+
+    function sortearTimes() {
+      const input = document.getElementById("jogadoresInput").value;
+      const nomesOriginais = input.split("\n").map(j => j.trim()).filter(j => j !== "");
+      if (nomesOriginais.length < 2) {
+        alert("Digite pelo menos 2 jogadores.");
+        return;
+      }
+
+      let goleiros = [];
+      let outros = [];
+
+      nomesOriginais.forEach(nome => {
+        const nomeLower = nome.toLowerCase();
+        if (goleirosFixos.includes(nomeLower)) {
+          goleiros.push(nome);
+        } else {
+          outros.push(nome);
+        }
+      });
+
+      embaralharArray(outros);
+
+      const totalJogadores = goleiros.length + outros.length;
+      const totalTimes = Math.floor(totalJogadores / jogadoresPorTime);
+
+      if (goleiros.length > totalTimes) {
+        alert("Número de goleiros fixos excede o número de times.");
+        return;
+      }
+
+      const times = Array.from({ length: totalTimes }, () => []);
+
+      // Distribuir goleiros aleatoriamente
+      const timeIndices = embaralharArray([...Array(totalTimes).keys()]);
+      goleiros.forEach((goleiro, i) => {
+        times[timeIndices[i]].push(`${goleiro} (G)`);
+      });
+
+      let index = 0;
+      outros.forEach(jogador => {
+        // Encontra o próximo time com espaço
+        let tentativas = 0;
+        while (times[index].length >= jogadoresPorTime) {
+          index = (index + 1) % totalTimes;
+          if (++tentativas > totalTimes) break;
+        }
+        if (times[index].length < jogadoresPorTime) {
+          times[index].push(jogador);
+        }
+      });
+
+      const usados = times.flat().map(n => n.replace(" (G)", ""));
+      const reservas = nomesOriginais.filter(nome => !usados.includes(nome));
+
+      const resultado = document.getElementById("resultado");
+      resultado.innerHTML = "";
+
+      if (times.length === 0) {
+        resultado.innerHTML = "<p class='text-center'>Nenhum time pôde ser formado.</p>";
+        return;
+      }
+
+      times.forEach((time, i) => {
+        resultado.appendChild(criarCard(`Time ${i + 1}`, time, "info"));
+      });
+
+      if (reservas.length > 0) {
+        resultado.appendChild(criarCard("Reservas", reservas, "secondary"));
+      }
+    }
+
+    function criarCard(titulo, jogadores, cor) {
+      const col = document.createElement("div");
+      col.className = "col-sm-12 col-md-6 col-lg-4";
+
+      const card = document.createElement("div");
+      card.className = `card border-${cor} shadow-sm`;
+
+      const header = document.createElement("div");
+      header.className = `card-header bg-${cor} text-white text-center`;
+      header.innerHTML = `<h5 class="mb-0">${titulo}</h5>`;
+
+      const list = document.createElement("ul");
+      list.className = "list-group list-group-flush";
+
+      jogadores.forEach(jogador => {
+        const item = document.createElement("li");
+        item.className = "list-group-item";
+        item.textContent = jogador;
+        list.appendChild(item);
+      });
+
+      card.appendChild(header);
+      card.appendChild(list);
+      col.appendChild(card);
+
+      return col;
+    }
+
+    function embaralharArray(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+  </script>
+</body>
+</html>
