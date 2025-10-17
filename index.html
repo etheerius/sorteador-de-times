@@ -38,81 +38,47 @@
   </div>
 
   <script>
-    const goleirosFixos = ["gabriel", "washington"];
     const jogadoresPorTime = 5;
 
     function sortearTimes() {
       const input = document.getElementById("jogadoresInput").value;
       const nomesOriginais = input.split("\n").map(j => j.trim()).filter(j => j !== "");
-      if (nomesOriginais.length < 2) {
-        alert("Digite pelo menos 2 jogadores.");
+
+      if (nomesOriginais.length < jogadoresPorTime) {
+        alert(`Digite pelo menos ${jogadoresPorTime} jogadores para formar um time.`);
         return;
       }
 
-      let goleiros = [];
-      let outros = [];
+      const nomesEmbaralhados = embaralharArray([...nomesOriginais]);
+      const totalTimes = Math.floor(nomesEmbaralhados.length / jogadoresPorTime);
+      const times = [];
 
-      nomesOriginais.forEach(nome => {
-        const nomeLower = nome.toLowerCase();
-        if (goleirosFixos.includes(nomeLower)) {
-          goleiros.push(nome);
-        } else {
-          outros.push(nome);
-        }
-      });
-
-      embaralharArray(outros);
-
-      const totalJogadores = goleiros.length + outros.length;
-      const totalTimes = Math.floor(totalJogadores / jogadoresPorTime);
-
-      if (goleiros.length > totalTimes) {
-        alert("Número de goleiros fixos excede o número de times.");
-        return;
+      for (let i = 0; i < totalTimes; i++) {
+        const inicio = i * jogadoresPorTime;
+        const fim = inicio + jogadoresPorTime;
+        times.push(nomesEmbaralhados.slice(inicio, fim));
       }
 
-      const times = Array.from({ length: totalTimes }, () => []);
-
-      // Distribuir goleiros aleatoriamente
-      const timeIndices = embaralharArray([...Array(totalTimes).keys()]);
-      goleiros.forEach((goleiro, i) => {
-        times[timeIndices[i]].push(`${goleiro} (G)`);
-      });
-
-      let index = 0;
-      outros.forEach(jogador => {
-        // Encontra o próximo time com espaço
-        let tentativas = 0;
-        while (times[index].length >= jogadoresPorTime) {
-          index = (index + 1) % totalTimes;
-          if (++tentativas > totalTimes) break;
-        }
-        if (times[index].length < jogadoresPorTime) {
-          times[index].push(jogador);
-        }
-      });
-
-      const usados = times.flat().map(n => n.replace(" (G)", ""));
-      const reservas = nomesOriginais.filter(nome => !usados.includes(nome));
+      const usados = times.flat();
+      const reservas = nomesEmbaralhados.filter(nome => !usados.includes(nome));
 
       const resultado = document.getElementById("resultado");
       resultado.innerHTML = "";
 
-      if (times.length === 0) {
-        resultado.innerHTML = "<p class='text-center'>Nenhum time pôde ser formado.</p>";
-        return;
-      }
-
       times.forEach((time, i) => {
-        resultado.appendChild(criarCard(`Time ${i + 1}`, time, "info"));
+        resultado.appendChild(criarTabela(`Time ${i + 1}`, time, "info"));
       });
 
       if (reservas.length > 0) {
-        resultado.appendChild(criarCard("Reservas", reservas, "secondary"));
+        resultado.appendChild(criarTabela("Reservas", reservas, "secondary"));
+      }
+
+      if (times.length === 0) {
+        resultado.innerHTML = "<p class='text-center'>Nenhum time pôde ser formado.</p>";
       }
     }
 
-    function criarCard(titulo, jogadores, cor) {
+    function criarTabela(titulo, jogadores, cor) {
       const col = document.createElement("div");
       col.className = "col-sm-12 col-md-6 col-lg-4";
 
@@ -123,18 +89,27 @@
       header.className = `card-header bg-${cor} text-white text-center`;
       header.innerHTML = `<h5 class="mb-0">${titulo}</h5>`;
 
-      const list = document.createElement("ul");
-      list.className = "list-group list-group-flush";
+      const table = document.createElement("table");
+      table.className = "table mb-0";
 
-      jogadores.forEach(jogador => {
-        const item = document.createElement("li");
-        item.className = "list-group-item";
-        item.textContent = jogador;
-        list.appendChild(item);
+      const tbody = document.createElement("tbody");
+
+      jogadores.forEach((jogador, indice) => {
+        const tr = document.createElement("tr");
+        const th = document.createElement("th");
+        th.scope = "row";
+        th.textContent = indice + 1;
+        const td = document.createElement("td");
+        td.textContent = jogador;
+        tr.appendChild(th);
+        tr.appendChild(td);
+        tbody.appendChild(tr);
       });
 
+      table.appendChild(tbody);
+
       card.appendChild(header);
-      card.appendChild(list);
+      card.appendChild(table);
       col.appendChild(card);
 
       return col;
